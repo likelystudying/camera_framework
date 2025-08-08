@@ -1,0 +1,28 @@
+# Ignore virtual environment
+venv/
+.env/
+.venv/
+
+# Ignore Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ignore saved frames folder
+saved_frames/
+
+# Ignore binaries and build artifacts
+*.exe
+*.dll
+*.so
+*.bin
+*.o
+*.obj
+*.a
+*.out
+
+# Ignore OS/IDE/system files
+.DS_Store
+Thumbs.db
+*.log
+*.swp

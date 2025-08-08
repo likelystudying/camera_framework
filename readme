@@ -1,0 +1,20 @@
+todo: 
+
+#create APIs
+
+x init library
+x open camera
+x close camera
+
+x start capture (x)
+x start streaming
+x stop streaming
+
+settings
+logging
+
+
+#to run:
+python3 camera_app_2.py
+
+-------------
