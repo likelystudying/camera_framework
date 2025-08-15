@@ -88,30 +88,39 @@ class CameraApp(QWidget):
         try:
             self.log.info("Starting camera...")
 
+            # Stop existing consumer thread first
+            if self.consumer and self.consumer.isRunning():
+                self.log.info("Stopping existing consumer thread")
+                self.consumer.stop()      # Make sure this sets an Event and exits the thread loop
+                self.consumer.wait()      # Wait until the thread finishes
+
+            # Stop streaming
+            if self.camera.streaming:
+                self.log.info("Stopping previous camera streaming")
+                self.camera.stop_streaming()
+
+            # Clear buffer
+            self.buffer.clear()
+
+            # Reopen camera
             if self.camera.cap is not None:
-                self.log.info("Releasing camera before re-opening")
                 self.camera.cap.release()
                 self.camera.cap = None
                 time.sleep(0.5)
 
             self.camera.open_camera()
 
-            if self.consumer and self.consumer.isRunning():
-                self.log.info("Stopping existing consumer thread")
-                self.consumer.stop()
-                self.consumer.wait()
-
-            self.buffer.clear()
-
+            # Start consumer thread
             self.consumer = FrameConsumer(self.buffer)
             self.consumer.frame_ready.connect(self.display_frame)
             self.consumer.start()
 
+            # Start streaming
             self.camera.start_streaming()
             self.log.info("Camera started.")
 
         except RuntimeError as e:
-            self.log.info(f"Error starting camera: {e}")
+            self.log.error(f"Error starting camera: {e}")
             self.image_label.setText(str(e))
 
         self.log.info("start_camera --end")
