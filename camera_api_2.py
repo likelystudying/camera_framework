@@ -7,8 +7,64 @@
 
 import cv2
 import time
+import os
+import sys
+import logging
+from datetime import datetime
 from threading import Thread, Event, Lock
 from collections import deque
+
+class Logger:
+    _instance = None
+    _lock = Lock()
+
+    def __new__(cls, log_file=None, level=logging.INFO):
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = super().__new__(cls)
+
+                # Default log file path
+                if log_file is None:
+                    log_dir = "./log"
+                    os.makedirs(log_dir, exist_ok=True)
+                    log_file = os.path.join(log_dir, f"{datetime.now().strftime('%Y-%m-%d')}.log")
+
+                # Create logger
+                cls._instance.logger = logging.getLogger("AppLogger")
+                cls._instance.logger.setLevel(level)
+                cls._instance.logger.propagate = False  # Avoid duplicate logs
+
+                # Clear old handlers
+                if cls._instance.logger.hasHandlers():
+                    cls._instance.logger.handlers.clear()
+
+                # Formatter with PID and TID
+                formatter = logging.Formatter(
+                    "%(asctime)s [PID:%(process)d] [TID:%(thread)d] [%(levelname)s] %(message)s",
+                    "%Y-%m-%d %H:%M:%S"
+                )
+
+                # File handler
+                file_handler = logging.FileHandler(log_file)
+                file_handler.setFormatter(formatter)
+
+                # Console handler
+                console_handler = logging.StreamHandler(sys.stdout)
+                console_handler.setFormatter(formatter)
+
+                cls._instance.logger.addHandler(file_handler)
+                cls._instance.logger.addHandler(console_handler)
+
+            return cls._instance
+
+    def info(self, message):
+        self.logger.info(message)
+
+    def warning(self, message):
+        self.logger.warning(message)
+
+    def error(self, message):
+        self.logger.error(message)
 
 
 class CircularBuffer:

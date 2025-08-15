@@ -1,6 +1,7 @@
 # camera_asourcpp.py
 
-#python3 camera_app_2.py
+#python3 -m venv venv
+#source venv/bin/activate
 
 import sys
 import time
@@ -11,7 +12,8 @@ from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 import cv2
 import os
-from camera_api_2 import CameraAPI, CircularBuffer
+import logging
+from camera_api_2 import CameraAPI, CircularBuffer, Logger
 
 
 class FrameConsumer(QThread):
@@ -62,6 +64,9 @@ class CameraApp(QWidget):
         main_layout.addLayout(button_layout)
 
         self.setLayout(main_layout)
+
+        self.log = Logger(level=logging.DEBUG)
+        self.log.info("Initialized.")
 
         self.buffer = CircularBuffer(10)
         self.camera = CameraAPI(self.buffer)
