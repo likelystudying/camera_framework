@@ -41,6 +41,10 @@ class FrameConsumer(QThread):
 class CameraApp(QWidget):
     def __init__(self):
         super().__init__()
+
+        self.log = Logger(level=logging.DEBUG)
+        self.log.info("initialize --start")
+
         self.setWindowTitle("Advanced Camera Viewer")
         self.setGeometry(100, 100, 800, 600)
 
@@ -65,8 +69,7 @@ class CameraApp(QWidget):
 
         self.setLayout(main_layout)
 
-        self.log = Logger(level=logging.DEBUG)
-        self.log.info("Initialized.")
+   
 
         self.buffer = CircularBuffer(10)
         self.camera = CameraAPI(self.buffer)
@@ -78,13 +81,15 @@ class CameraApp(QWidget):
         self.save_button.clicked.connect(self.save_current_frame)
 
         self.last_frame = None
+        self.log.info("initialize --end")
 
     def start_camera(self):
+        self.log.info("start_camera --start")
         try:
-            print("Starting camera...")
+            self.log.info("Starting camera...")
 
             if self.camera.cap is not None:
-                print("Releasing camera before re-opening")
+                self.log.info("Releasing camera before re-opening")
                 self.camera.cap.release()
                 self.camera.cap = None
                 time.sleep(0.5)
@@ -92,7 +97,7 @@ class CameraApp(QWidget):
             self.camera.open_camera()
 
             if self.consumer and self.consumer.isRunning():
-                print("Stopping existing consumer thread")
+                self.log.info("Stopping existing consumer thread")
                 self.consumer.stop()
                 self.consumer.wait()
 
@@ -103,14 +108,17 @@ class CameraApp(QWidget):
             self.consumer.start()
 
             self.camera.start_streaming()
-            print("Camera started.")
+            self.log.info("Camera started.")
 
         except RuntimeError as e:
-            print(f"Error starting camera: {e}")
+            self.log.info(f"Error starting camera: {e}")
             self.image_label.setText(str(e))
 
+        self.log.info("start_camera --end")
+
     def stop_camera(self):
-        print("Stopping camera...")
+        self.log.info("Stopping camera...")
+        self.log.info("stop_camera --start")
         if self.consumer and self.consumer.isRunning():
             self.consumer.stop()
             self.consumer.wait()
@@ -122,17 +130,18 @@ class CameraApp(QWidget):
 
         self.image_label.setText("Camera stopped.")
         self.fps_label.setText("FPS: 0.00")
-        print("Camera stopped.")
+        self.log.info("Camera stopped.")
+        self.log.info("start_camera --end")
 
-    def stop_camera(self):
-        if self.consumer and self.consumer.isRunning():
-            self.consumer.stop()
-            self.consumer.wait()  # wait ensures thread stopped before restart
-            #self.consumer.stop()
-        self.camera.stop_streaming()
-        self.camera.close_camera()
-        self.image_label.setText("Camera stopped.")
-        self.fps_label.setText("FPS: 0.00")
+    # def stop_camera(self):
+    #     if self.consumer and self.consumer.isRunning():
+    #         self.consumer.stop()
+    #         self.consumer.wait()  # wait ensures thread stopped before restart
+    #         #self.consumer.stop()
+    #     self.camera.stop_streaming()
+    #     self.camera.close_camera()
+    #     self.image_label.setText("Camera stopped.")
+    #     self.fps_label.setText("FPS: 0.00")
 
     def display_frame(self, frame, fps):
         self.last_frame = frame.copy()
@@ -154,7 +163,7 @@ class CameraApp(QWidget):
             os.makedirs("saved_frames", exist_ok=True)
             filename = f"saved_frames/frame_{int(time.time())}.png"
             cv2.imwrite(filename, self.last_frame)
-            print(f"Saved frame to {filename}")
+            self.log.info(f"Saved frame to {filename}")
 
 
 if __name__ == "__main__":
