@@ -3,16 +3,18 @@
 #python3 -m venv venv
 #source venv/bin/activate
 # camera_app_2.py
+# camera_app_2.py
+
 import sys
 import time
+import os
+import logging
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QFrame, QLineEdit
 )
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 import cv2
-import os
-import logging
 from camera_api_2 import CameraAPI, CircularBuffer, Logger
 
 
@@ -62,6 +64,9 @@ class CameraApp(QWidget):
         self.save_button = QPushButton("Save Frame")
         self.apply_button = QPushButton("Apply Settings")
 
+        # index input
+        self.index_input = QLineEdit("0")
+
         # --- Width/Height/FPS input fields ---
         self.width_input = QLineEdit("640")
         self.height_input = QLineEdit("480")
@@ -72,6 +77,10 @@ class CameraApp(QWidget):
         button_layout.addWidget(self.stop_button)
         button_layout.addWidget(self.save_button)
         button_layout.addWidget(self.apply_button)
+
+        button_layout.addWidget(QLabel("Index"))
+        button_layout.addWidget(self.index_input)
+
         button_layout.addWidget(QLabel("Width"))
         button_layout.addWidget(self.width_input)
         button_layout.addWidget(QLabel("Height"))
@@ -93,7 +102,7 @@ class CameraApp(QWidget):
         self.last_frame = None
 
         # --- Button connections ---
-        self.start_button.clicked.connect(self.start_camera)
+        self.start_button.clicked.connect(self.on_start_button)
         self.stop_button.clicked.connect(self.stop_camera)
         self.save_button.clicked.connect(self.save_current_frame)
         self.apply_button.clicked.connect(self.apply_settings)
@@ -120,8 +129,17 @@ class CameraApp(QWidget):
         except ValueError as e:
             self.log.error(f"Invalid input for settings: {e}")
 
-    def start_camera(self):
-        self.log.info("start_camera --start")
+    def on_start_button(self):
+        try:
+            index = int(self.index_input.text())
+        except ValueError:
+            self.log.error("Invalid camera index")
+            return
+        self.start_camera(index)
+
+    def start_camera(self, index):
+        """Start camera streaming using a specific camera index."""
+        self.log.info(f"start_camera(index={index}) --start")
         try:
             # Stop existing consumer thread
             if self.consumer.isRunning():
@@ -138,12 +156,14 @@ class CameraApp(QWidget):
                 self.camera.cap = None
                 time.sleep(0.2)
 
-            self.camera.open_camera()
+            # open camera with selected index
+            self.camera.open_camera(index=index)
+
             self.consumer = FrameConsumer(self.buffer)
             self.consumer.frame_ready.connect(self.display_frame)
             self.consumer.start()
             self.camera.start_streaming()
-            self.log.info("Camera started.")
+            self.log.info(f"Camera {index} started.")
 
         except RuntimeError as e:
             self.log.error(f"Error starting camera: {e}")
